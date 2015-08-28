@@ -108,7 +108,7 @@ public class Event {
 		String id="SOC"+Integer.toString(count);
 		String ref=".";
 		String qual=".";
-		String filter="";
+		String filter="PASS";
 		
 		GenomicCoordinate c1 = new GenomicCoordinate(chr1, p1);
 		GenomicCoordinate c2 = new GenomicCoordinate(chr2, p2);
@@ -263,7 +263,7 @@ public class Event {
 		String ref="";
 		String alt="";
 		String info=bits[10];
-		String filter = "";
+		String filter = "PASS";
 		GenomicCoordinate c1 = new GenomicCoordinate(chr1, p1);
 		GenomicCoordinate c2 = new GenomicCoordinate(chr2, p2);
 		EVENT_TYPE type = classifySocratesBreakpoint(c1, o1, c2, o2);
@@ -308,7 +308,7 @@ public class Event {
 		String id="CRT"+Integer.toString(count);
 		String ref=".";
 		String qual=".";
-		String filter="";
+		String filter="PASS";
 		
 		GenomicCoordinate c1 = new GenomicCoordinate(chr1, p1);
 		GenomicCoordinate c2 = new GenomicCoordinate(chr2, p2);
@@ -586,5 +586,9 @@ public class Event {
 	
 	public String toVcf() {
 		return this.getCoord().getChr()+"\t"+this.getCoord().getPos()+"\t"+this.getId()+"\t"+this.getRef()+"\t"+this.getAlt()+"\t"+this.getQual()+"\t"+this.getFilter()+"\t"+this.getInfo();
+	}
+	
+	public void setFailFilter(){
+		this.filter = "FAIL";
 	}
 }

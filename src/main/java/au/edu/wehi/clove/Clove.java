@@ -505,9 +505,10 @@ public class Clove {
 
         //ALT
         output.write("##ALT=<ID=DEL,Description=\"Deletion\">\n");
-        output.write("##ALT=<ID=DUP,Description=\"Duplication\">\n");
+        output.write("##ALT=<ID=TAN,Description=\"Tandem Duplication\">\n");
         output.write("##ALT=<ID=INV,Description=\"Inversion\">\n");
         output.write("##ALT=<ID=INS,Description=\"Insertion\">\n");
+        output.write("##ALT=<ID=DUP,Description=\"Complex Duplication\">\n");
         output.write("##ALT=<ID=TRA,Description=\"Complex Translocation\">\n");
         output.write("##ALT=<ID=CIV,Description=\"Complex Inversion\">\n");
         output.write("##ALT=<ID=CVT,Description=\"Complex Inverted Translocation\">\n");
@@ -610,9 +611,9 @@ public class Clove {
 					continue;
 				Event e;
 				switch(algorithm){
-				case SOCRATES: 	e = Event.createNewEventFromSocratesOutput(line); 	break;
+				case SOCRATES: 	e = Event.createNewEventFromSocratesOutputLatest(line, count++); 	break;
 				case DELLY: 	e = Event.createNewEventFromDellyOutputLatest(line);break;
-				case CREST:		e = Event.createNewEventFromCrestOutput(line); 		break;
+				case CREST:		e = Event.createNewEventFromCrestOutputLatest(line, count++); 		break;
 				case GUSTAF: e = Event.createNewEventFromGustafOutput(line);	  if(e.size()<50) continue; break;
 				case BEDPE: 	e = Event.createNewEventFromBEDPE(line); break;
 				default:		e = null;
@@ -1184,11 +1185,11 @@ public class Clove {
 		//this time for output
 		int totalEvents = 0;
 		for(Entry<String, TreeSet<GenomicNode>> tableEntry: genomicNodes.entrySet()) {
-			System.out.println("Working on Entry: "+tableEntry.toString());
+			//System.out.println("Working on Entry: "+tableEntry.toString());
 			for(GenomicNode currentNode: tableEntry.getValue()){
 				if(currentNode.getEvents().size() > 1){
-					System.out.println("Node might be shifty: "+currentNode.getEvents().size()+" members!");
-					System.out.println(currentNode.getEvents().get(0)+"  "+currentNode.getEvents().get(1));
+//					System.out.println("Node might be shifty: "+currentNode.getEvents().size()+" members!");
+//					System.out.println(currentNode.getEvents().get(0)+"  "+currentNode.getEvents().get(1));
 				}
 				totalEvents += currentNode.getEvents().size();
 				HashSet<Event> skipEvents = new HashSet<Event>(), deleteEvents = new HashSet<Event>(), newEvents = new HashSet<Event>();
@@ -1201,7 +1202,7 @@ public class Clove {
 						case INV1: 
 						case INV2:
 							skipEvents.add(e);
-							deleteEvents.add(e);
+							//deleteEvents.add(e);
 							if(classifySimpleInversion) {
 								ComplexEvent e2 = new ComplexEvent(e.getC1(), e.getC2(), EVENT_TYPE.COMPLEX_INVERSION, new Event[] {e}, currentNode);
 								e = e2;
@@ -1213,42 +1214,39 @@ public class Clove {
 								e2.setQual(e2.getQual());
 								e2.setInfo(e2.getInfo());
 							}
-							else 
-								continue;
+							else {
+								e.setAlt("<INV>");
+								e.setFailFilter();
+							}
 							break;
 						case DEL:
 							//check for deletion
 							//double readDepth = meanReadDepth(reader, e.getC1().getPos()+1, e.getC2().getPos()-1);
 							double readDepth = getReadDepth(samReader, e.getC1().getChr(), e.getC1().getPos()+1, e.getC2().getPos()-1);
+							skipEvents.add(e);
 							if(readDepth < 0 || readDepth > mean-interval){
-								deleteEvents.add(e);
-								skipEvents.add(e);
-								e.setId(e.getId());
-								e.setAlt("<DEL>");
-								e.setFilter(e.getFilter());
-								e.setQual(e.getQual());
-								e.setInfo(e.getInfo()+"; DP="+readDepth ); 
-								continue;
+								//deleteEvents.add(e);
+								e.setFailFilter(); 
 							} else {
-								System.out.print("read depth for event: "+readDepth+"\t");
+								//System.out.print("read depth for event: "+readDepth+"\t");
 							}
+							e.setAlt("<DEL>");
+							e.setInfo(e.getInfo()+"; ADP="+readDepth );
 							break;
 						case TAN:
 							//double readDepth = meanReadDepth(reader, e.getC1().getPos()+1, e.getC2().getPos()-1);
 							readDepth = getReadDepth(samReader, e.getC1().getChr(), e.getC1().getPos(), e.getC2().getPos());
+							skipEvents.add(e);
 //							//double flank = (meanReadDepth(reader, e.getC1().getPos()-200, e.getC1().getPos()) + meanReadDepth(reader, e.getC2().getPos(), e.getC2().getPos()+200))/2;
 							if( readDepth < 0 || readDepth < mean+interval){
 								//System.out.println("\t\t\t\t\t\tNot proper duplication!!");
-								deleteEvents.add(e);
-								e.setId(e.getId());
-								e.setAlt("<DUP>");
-								e.setFilter(e.getFilter());
-								e.setQual(e.getQual());
-								e.setInfo(e.getInfo()+"; DP="+readDepth );
-								continue;
+								//deleteEvents.add(e);
+								e.setFailFilter();
 							} else {
-								System.out.print("read depth for event: "+readDepth+"\t");
+								//System.out.print("read depth for event: "+readDepth+"\t");
 							}
+							e.setAlt("<DUP>");
+							e.setInfo(e.getInfo()+"; ADP="+readDepth );
 							break;
 						case COMPLEX_DUPLICATION:
 						case COMPLEX_INVERTED_DUPLICATION:
@@ -1267,9 +1265,17 @@ public class Clove {
 //								System.out.print("read depth for event: "+readDepth+"\t");
 //							}
 							break;
+						case ITX1:
+						case ITX2:
+						case INVTX1:
+						case INVTX2:
+							e.setFailFilter();
+							e.setAlt(Event.altVCF(e.getType()));
+							skipEvents.add(e);
+							break;
 						}
 						
-						System.out.println(e);
+						//System.out.println(e);
 					//}
 					if(e.otherNode(currentNode) == currentNode){
 						skipEvents.add(e);
@@ -1296,12 +1302,19 @@ public class Clove {
 		count=0;
 		//reportEventComposition(genomicNodes);
 		/*VCF Output*/
+		HashSet<Event> skipEvents = new HashSet<Event>();
 		for(Entry<String, TreeSet<GenomicNode>> tableEntry: genomicNodes.entrySet()) {
 			for(GenomicNode currentNode: tableEntry.getValue()){
 				for(Event e: currentNode.getEvents()){
+					if(skipEvents.contains(e)){
+						continue;
+					} else {
+						skipEvents.add(e);
+					}
 					try{
 						writer.write(e.toVcf()+"\n");
 					} catch (NullPointerException npe) {
+						System.out.println("VCF fail");
 					}
 				}
 			}

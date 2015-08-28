@@ -4,7 +4,7 @@
   <groupId>au.edu.wehi</groupId>
   <artifactId>clove</artifactId>
   <packaging>jar</packaging>
-  <version>0.1</version>
+  <version>0.11</version>
   <name>clove</name>
   <url>http://github.com/PapenfussLab/clove</url>
   <properties>
@@ -26,7 +26,7 @@
 	  <configuration>
 	    <archive>
 	      <manifest>
-	        <mainClass>fully.qualified.MainClass</mainClass>
+	        <mainClass>au.edu.wehi.clove.Clove</mainClass>
 	      </manifest>
 	    </archive>
 	    <descriptorRefs>
