@@ -63,6 +63,8 @@ public class GenomicNode implements Comparable<GenomicNode>{
 		//change end coordinate of node interval
 		this.end = other.end;
 		//add event if necessary
+		if(other.events.size() == 0)
+			return;
 		Event e = other.events.get(0);
 		if(!events.contains(e)){
 			events.add(e);
@@ -84,15 +86,23 @@ public class GenomicNode implements Comparable<GenomicNode>{
 		HashSet<Event> redundantEvents = new HashSet<Event>();
 		for(int i=0; i<events.size(); i++){
 			e1 = events.get(i);
+			if(redundantEvents.contains(e1)) continue;
 			for(int j=i+1; j< events.size(); j++){
 				e2=events.get(j);
+				if(redundantEvents.contains(e2)) continue;
 				if(e1.otherNode(this).getStart().distanceTo(e2.otherNode(this).getStart()) < maxDistanceForNodes && e1.getType() == e2.getType()) {
 				//if(Event.sameNodeSets(e1,e2) && e1.getType() == e2.getType()){
 					//System.out.println("Redundant events identified: "+e1+" "+e2);
+					e1.setId(e1.getId()+"-"+e2.getId());
+					e1.addCaller(e2.getCalledBy());
+					e1.increaseCalls(e2.getCalledTimes());
 					redundantEvents.add(e2);
 					global_event_merge_counter++;
 				}
 			}
+		}
+		for(Event e: redundantEvents){
+			e.otherNode(this).getEvents().remove(e);
 		}
 		this.events.removeAll(redundantEvents);
 	}

@@ -11,12 +11,23 @@ public class ComplexEvent extends Event{
 		this.eventsInvolvedInComplexEvent = involvedEvents;
 		super.setNode(hostingNode, true);
 		super.setNode(hostingNode, false);
-		
+//		String[] ids = new String[involvedEvents.length];
+//		for (int i=0; i<ids.length;i++){ ids[i] = involvedEvents[i].getId();}
+//		String newId = String.join("+", ids) ;
+//		super.setId(newId);
+		for(Event e: involvedEvents){
+			super.addCaller(e.getCalledBy());
+			super.increaseCalls(e.getCalledTimes());
+		}
 	}
 	public ComplexEvent(GenomicCoordinate c1, GenomicCoordinate c2,
 			EVENT_TYPE type, Event[] involvedEvents, GenomicNode hostingNode, GenomicCoordinate insertionPoint) {
 		this(c1,c2,type,involvedEvents,hostingNode);
 		this.insertionPoint = insertionPoint;
+//		String[] ids = new String[involvedEvents.length];
+//		for (int i=0; i<ids.length;i++){ ids[i] = involvedEvents[i].getId();}
+//		String newId = String.join("+", ids) ;
+//		super.setId(newId);
 	}
 
 	public Event[] getEventsInvolvedInComplexEvent(){

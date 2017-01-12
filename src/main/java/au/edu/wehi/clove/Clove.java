@@ -276,6 +276,10 @@ public class Clove {
 				
 				currentChromosome = chr;
 				System.out.println("Working on chromosome: "+currentChromosome);
+				if(!genomicNodes.containsKey(chr)){
+					e = null;
+					continue;
+				}
 				iter = genomicNodes.get(currentChromosome).iterator();
 				events = new EventIterator(iter, skip);
 				e = events.next();
@@ -289,6 +293,7 @@ public class Clove {
 			}
 			if(e==null){
 				//System.out.println("DEFINITE FN: "+goldLine);
+				statsByType.get(typeConversion.get(type))[2]++;
 				goldLine = gold.readLine();
 				continue;
 			} 
@@ -488,6 +493,7 @@ public class Clove {
         output.write("##INFO=<ID=SVTYPE,Number=1,Type=String,Description=\"Type of structural variant\">\n");
         output.write("##INFO=<ID=SVMETHOD,Number=1,Type=String,Description=\"Type of approach used to detect SV\">\n");
         output.write("##INFO=<ID=ADP,Number=1,Type=Integer,Description=\"Average Read Depth\">\n");
+        output.write("##INFO=<ID=SUPPORT,Number=2,Type=Integer,Description=\"SV support by (i) number of aligners, and (ii) number of calls between all aligners\">\n");
         
         //FILTER
         output.write("##FILTER=<ID=LowQual,Description=\"PE support below 3 or mapping quality below 20.\">\n");
@@ -565,7 +571,7 @@ public class Clove {
 				try {
 					samReader=new  SAMFileReader(new  File(args[argindex + 1]));
 					argindex += 2;
-				} catch (IllegalArgumentException e){
+				} catch (Exception e){
 					System.err.println("Unable to load bam file.");
 					System.exit(1);
 				}
@@ -748,7 +754,7 @@ public class Clove {
 //									}
 									double readDepth = getReadDepth(samReader, invstart.getChr(), invstart.getPos(), invend.getPos());
 									//tempInfo="SVTYPE="+newComplexEvent.getAlt().substring(1, 4)+"; CHR2="+invend.getChr()+"; END="+Integer.toString(invend.getPos());
-									tempInfo="SVTYPE="+newComplexEvent.getAlt().substring(1, 4)+"; CHR2="+invend.getChr()+"; END="+Integer.toString(invend.getPos())+"; ADP="+readDepth;
+									tempInfo="SVTYPE="+newComplexEvent.getAlt().substring(1, 4)+";CHR2="+invend.getChr()+";END="+Integer.toString(invend.getPos())+";ADP="+readDepth;
 									newComplexEvent.setInfo(tempInfo);
 																									
 									//writer.write(newComplexEvent.getC1().getChr()+"\t"+invstart+"\t"+newComplexEvent.getId()+"\t"+newComplexEvent.getRef()+"\t"+newComplexEvent.getAlt()+"\t"+newComplexEvent.getQual()+"\t"+newComplexEvent.getFilter()+"\t"+newComplexEvent.getInfo()+"\n");
@@ -788,7 +794,7 @@ public class Clove {
 //											 }
 											 double readDepth = getReadDepth(samReader, invstart.getChr(), invstart.getPos(), invend.getPos());
 											 //tempInfo="SVTYPE="+newComplexEvent.getAlt().substring(1, 4)+"; CHR2="+invend.getChr()+"; END="+Integer.toString(invend.getPos());
-											 tempInfo="SVTYPE="+newComplexEvent.getAlt().substring(1, 4)+"; CHR2="+invend.getChr()+"; END="+Integer.toString(invend.getPos())+"; ADP="+readDepth;
+											 tempInfo="SVTYPE="+newComplexEvent.getAlt().substring(1, 4)+";CHR2="+invend.getChr()+";END="+Integer.toString(invend.getPos())+";ADP="+readDepth;
 											 newComplexEvent.setInfo(tempInfo);
 											 //writer.write(newComplexEvent.getC1().getChr()+"\t"+invstart+"\t"+newComplexEvent.getId()+"\t"+newComplexEvent.getRef()+"\t"+newComplexEvent.getAlt()+"\t"+newComplexEvent.getQual()+"\t"+newComplexEvent.getFilter()+"\t"+newComplexEvent.getInfo()+"\n");
 										} else {
@@ -821,7 +827,7 @@ public class Clove {
 											double readDepth = getReadDepth(samReader, invstart.getChr(), invstart.getPos(), invend.getPos());
 											//tempInfo="SVTYPE="+newComplexEvent.getAlt().substring(1, 4)+"; CHR2="+invend.getChr()+"; END="+Integer.toString(invend.getPos());
 //											tempInfo="SVTYPE="+newComplexEvent.getAlt().substring(1, 4)+"; CHR2="+invend.getChr()+"; END="+Integer.toString(invend.getPos())+"; ADP="+readDepth;
-											tempInfo="SVTYPE="+newComplexEvent.getAlt().substring(1, 4)+"; CHR2="+invstart.getChr()+"; START="+Integer.toString(invstart.getPos())+"; END="+Integer.toString(invend.getPos())+"; ADP="+readDepth;
+											tempInfo="SVTYPE="+newComplexEvent.getAlt().substring(1, 4)+";CHR2="+invstart.getChr()+";START="+Integer.toString(invstart.getPos())+";END="+Integer.toString(invend.getPos())+";ADP="+readDepth;
 											newComplexEvent.setInfo(tempInfo);
 											newComplexEvent.setCoord(insert);
 											//writer.write(newComplexEvent.getC1().getChr()+"\t"+invstart+"\t"+newComplexEvent.getId()+"\t"+newComplexEvent.getRef()+"\t"+newComplexEvent.getAlt()+"\t"+newComplexEvent.getQual()+"\t"+newComplexEvent.getFilter()+"\t"+newComplexEvent.getInfo()+"\n");
@@ -859,7 +865,7 @@ public class Clove {
 												newComplexEvent = new ComplexEvent(transtart, tranend, EVENT_TYPE.COMPLEX_TRANSLOCATION, (new Event[] {e1, e2, e3}), hostingNode, traninsert);
 												//newComplexEvent.setId(e1.getId());
 												newComplexEvent.setCoord(transtart);
-												newComplexEvent.setId(e1.getId()+"+"+e2.getId());
+												newComplexEvent.setId(e1.getId()+"+"+e2.getId()+"+"+e3.getId());
 												newComplexEvent.setRef(e1.getRef());
 												newComplexEvent.setAlt("<TRA>");
 												newComplexEvent.setFilter(e1.getFilter());
@@ -880,7 +886,7 @@ public class Clove {
 //												}
 												double readDepth = getReadDepth(samReader, transtart.getChr(), transtart.getPos(), tranend.getPos());
 												//tempInfo="SVTYPE="+newComplexEvent.getAlt().substring(1, 4)+"; CHR2="+tranend.getChr()+"; END="+Integer.toString(tranend.getPos());
-												tempInfo="SVTYPE="+newComplexEvent.getAlt().substring(1, 4)+"; CHR2="+transtart.getChr()+"; START="+Integer.toString(transtart.getPos())+"; END="+Integer.toString(tranend.getPos())+"; ADP="+readDepth;
+												tempInfo="SVTYPE="+newComplexEvent.getAlt().substring(1, 4)+";CHR2="+transtart.getChr()+";START="+Integer.toString(transtart.getPos())+";END="+Integer.toString(tranend.getPos())+";ADP="+readDepth;
 												newComplexEvent.setInfo(tempInfo);
 												newComplexEvent.setCoord(traninsert);
 												//writer.write(newComplexEvent.getC1().getChr()+"\t"+newComplexEvent.getC1().getPos()+"\t"+newComplexEvent.getId()+"\t"+newComplexEvent.getRef()+"\t"+newComplexEvent.getAlt()+"\t"+newComplexEvent.getQual()+"\t"+newComplexEvent.getFilter()+"\t"+newComplexEvent.getInfo()+"\n");
@@ -898,7 +904,7 @@ public class Clove {
 												newComplexEvent = new ComplexEvent(transtart, tranend, EVENT_TYPE.COMPLEX_TRANSLOCATION, (new Event[] {e1, e2, e3}), currentNode, traninsert);
 												newComplexEvent.setCoord(transtart);
 												//newComplexEvent.setId(e1.getId());
-												newComplexEvent.setId(e1.getId()+"+"+e2.getId());
+												newComplexEvent.setId(e1.getId()+"+"+e2.getId()+"+"+e3.getId());
 												newComplexEvent.setRef(e1.getRef());
 												newComplexEvent.setAlt("<TRA>");
 												newComplexEvent.setFilter(e1.getFilter());
@@ -919,7 +925,7 @@ public class Clove {
 //												}
 												double readDepth = getReadDepth(samReader, transtart.getChr(), transtart.getPos(), tranend.getPos());
 												//tempInfo="SVTYPE="+newComplexEvent.getAlt().substring(1, 4)+"; CHR2="+tranend.getChr()+"; END="+Integer.toString(tranend.getPos());
-												tempInfo="SVTYPE="+newComplexEvent.getAlt().substring(1, 4)+"; CHR2="+transtart.getChr()+"; START="+Integer.toString(transtart.getPos())+"; END="+Integer.toString(tranend.getPos())+"; ADP="+readDepth;
+												tempInfo="SVTYPE="+newComplexEvent.getAlt().substring(1, 4)+";CHR2="+transtart.getChr()+";START="+Integer.toString(transtart.getPos())+";END="+Integer.toString(tranend.getPos())+";ADP="+readDepth;
 												newComplexEvent.setInfo(tempInfo);
 												newComplexEvent.setCoord(traninsert);
 												//writer.write(newComplexEvent.getC1().getChr()+"\t"+newComplexEvent.getC1().getPos()+"\t"+newComplexEvent.getId()+"\t"+newComplexEvent.getRef()+"\t"+newComplexEvent.getAlt()+"\t"+newComplexEvent.getQual()+"\t"+newComplexEvent.getFilter()+"\t"+newComplexEvent.getInfo()+"\n");
@@ -957,7 +963,7 @@ public class Clove {
 //												}
 												double readDepth = getReadDepth(samReader, dupstart.getChr(), dupstart.getPos(), dupend.getPos());
 												//tempInfo="SVTYPE="+newComplexEvent.getAlt().substring(1, 4)+"; CHR2="+dupend.getChr()+"; END="+Integer.toString(dupend.getPos());
-												tempInfo="SVTYPE="+newComplexEvent.getAlt().substring(1, 4)+"; CHR2="+dupstart.getChr()+"; START="+Integer.toString(dupstart.getPos())+"; END="+Integer.toString(dupend.getPos())+"; ADP="+readDepth;
+												tempInfo="SVTYPE="+newComplexEvent.getAlt().substring(1, 4)+";CHR2="+dupstart.getChr()+";START="+Integer.toString(dupstart.getPos())+";END="+Integer.toString(dupend.getPos())+";ADP="+readDepth;
 												newComplexEvent.setInfo(tempInfo);
 												newComplexEvent.setCoord(insert);
 												//writer.write(newComplexEvent.getC1().getChr()+"\t"+newComplexEvent.getC1().getPos()+"\t"+newComplexEvent.getId()+"\t"+newComplexEvent.getRef()+"\t"+newComplexEvent.getAlt()+"\t"+newComplexEvent.getQual()+"\t"+newComplexEvent.getFilter()+"\t"+newComplexEvent.getInfo()+"\n");
@@ -990,7 +996,7 @@ public class Clove {
 //												}
 												double readDepth = getReadDepth(samReader, dupstart.getChr(), dupstart.getPos(), dupend.getPos());
 												//tempInfo="SVTYPE="+newComplexEvent.getAlt().substring(1, 4)+"; CHR2="+dupend.getChr()+"; END="+Integer.toString(dupend.getPos());
-												tempInfo="SVTYPE="+newComplexEvent.getAlt().substring(1, 4)+"; CHR2="+dupstart.getChr()+"; START="+Integer.toString(dupstart.getPos())+"; END="+Integer.toString(dupend.getPos())+"; ADP="+readDepth;
+												tempInfo="SVTYPE="+newComplexEvent.getAlt().substring(1, 4)+";CHR2="+dupstart.getChr()+";START="+Integer.toString(dupstart.getPos())+";END="+Integer.toString(dupend.getPos())+";ADP="+readDepth;
 												newComplexEvent.setInfo(tempInfo);
 												newComplexEvent.setCoord(insert);
 												//writer.write(newComplexEvent.getC1().getChr()+"\t"+newComplexEvent.getC1().getPos()+"\t"+newComplexEvent.getId()+"\t"+newComplexEvent.getRef()+"\t"+newComplexEvent.getAlt()+"\t"+newComplexEvent.getQual()+"\t"+newComplexEvent.getFilter()+"\t"+newComplexEvent.getInfo()+"\n");
@@ -1026,7 +1032,7 @@ public class Clove {
 										newComplexEvent = new ComplexEvent(eventStart, eventEnd, EVENT_TYPE.COMPLEX_INTERCHROMOSOMAL_TRANSLOCATION, new Event[] {e1, e2, e3}, currentNode, eventInsert);
 										newComplexEvent.setCoord(eventStart);
 										//newComplexEvent.setId(e1.getId());
-										newComplexEvent.setId(e1.getId()+"+"+e2.getId());
+										newComplexEvent.setId(e1.getId()+"+"+e2.getId()+"+"+e3.getId());
 										newComplexEvent.setRef(e1.getRef());
 										newComplexEvent.setAlt("<CIT>");
 										newComplexEvent.setFilter(e1.getFilter());
@@ -1046,7 +1052,7 @@ public class Clove {
 //											newComplexEvent.setInfo(tempInfo);
 //										}
 										double readDepth = getReadDepth(samReader, eventStart.getChr(), eventStart.getPos(), eventEnd.getPos());
-										tempInfo="SVTYPE="+newComplexEvent.getAlt().substring(1, 4)+"; CHR2="+eventStart.getChr()+"; START="+Integer.toString(eventStart.getPos())+"; END="+Integer.toString(eventEnd.getPos())+"; ADP="+readDepth;
+										tempInfo="SVTYPE="+newComplexEvent.getAlt().substring(1, 4)+"; CHR2="+eventStart.getChr()+"; START="+Integer.toString(eventStart.getPos())+"; END="+Integer.toString(eventEnd.getPos())+";ADP="+readDepth;
 										newComplexEvent.setInfo(tempInfo);
 										newComplexEvent.setCoord(eventInsert);
 										//writer.write(newComplexEvent.getC1().getChr()+"\t"+newComplexEvent.getC1().getPos()+"\t"+newComplexEvent.getId()+"\t"+newComplexEvent.getRef()+"\t"+newComplexEvent.getAlt()+"\t"+newComplexEvent.getQual()+"\t"+newComplexEvent.getFilter()+"\t"+newComplexEvent.getInfo()+"\n");
@@ -1074,7 +1080,7 @@ public class Clove {
 //											newComplexEvent.setInfo(tempInfo);
 //										}
 										double readDepth = getReadDepth(samReader, eventStart.getChr(), eventStart.getPos(), eventEnd.getPos());
-										tempInfo="SVTYPE="+newComplexEvent.getAlt().substring(1, 4)+"; CHR2="+eventStart.getChr()+"; START="+Integer.toString(eventStart.getPos())+"; END="+Integer.toString(eventEnd.getPos())+"; ADP="+readDepth;
+										tempInfo="SVTYPE="+newComplexEvent.getAlt().substring(1, 4)+";CHR2="+eventStart.getChr()+";START="+Integer.toString(eventStart.getPos())+";END="+Integer.toString(eventEnd.getPos())+";ADP="+readDepth;
 										newComplexEvent.setInfo(tempInfo);
 										newComplexEvent.setCoord(eventInsert);
 										//writer.write(newComplexEvent.getC1().getChr()+"\t"+newComplexEvent.getC1().getPos()+"\t"+newComplexEvent.getId()+"\t"+newComplexEvent.getRef()+"\t"+newComplexEvent.getAlt()+"\t"+newComplexEvent.getQual()+"\t"+newComplexEvent.getFilter()+"\t"+newComplexEvent.getInfo()+"\n");
@@ -1117,7 +1123,7 @@ public class Clove {
 //											newComplexEvent.setInfo(tempInfo);
 //										}
 										double readDepth = getReadDepth(samReader, eventStart.getChr(), eventStart.getPos(), eventEnd.getPos());
-										tempInfo="SVTYPE="+newComplexEvent.getAlt().substring(1, 4)+"; CHR2="+eventStart.getChr()+"; START="+Integer.toString(eventStart.getPos())+"; END="+Integer.toString(eventEnd.getPos())+"; ADP="+readDepth;
+										tempInfo="SVTYPE="+newComplexEvent.getAlt().substring(1, 4)+";CHR2="+eventStart.getChr()+";START="+Integer.toString(eventStart.getPos())+";END="+Integer.toString(eventEnd.getPos())+";ADP="+readDepth;
 										newComplexEvent.setInfo(tempInfo);
 										newComplexEvent.setCoord(eventInsert);
 										//writer.write(newComplexEvent.getC1().getChr()+"\t"+newComplexEvent.getC1().getPos()+"\t"+newComplexEvent.getId()+"\t"+newComplexEvent.getRef()+"\t"+newComplexEvent.getAlt()+"\t"+newComplexEvent.getQual()+"\t"+newComplexEvent.getFilter()+"\t"+newComplexEvent.getInfo()+"\n");
@@ -1145,7 +1151,7 @@ public class Clove {
 //											newComplexEvent.setInfo(tempInfo);
 //										}
 										double readDepth = getReadDepth(samReader, eventStart.getChr(), eventStart.getPos(), eventEnd.getPos());
-										tempInfo="SVTYPE="+newComplexEvent.getAlt().substring(1, 4)+"; CHR2="+eventStart.getChr()+"; START="+Integer.toString(eventStart.getPos())+"; END="+Integer.toString(eventEnd.getPos())+"; ADP="+readDepth;
+										tempInfo="SVTYPE="+newComplexEvent.getAlt().substring(1, 4)+";CHR2="+eventStart.getChr()+";START="+Integer.toString(eventStart.getPos())+";END="+Integer.toString(eventEnd.getPos())+";ADP="+readDepth;
 										newComplexEvent.setInfo(tempInfo);
 										newComplexEvent.setCoord(eventInsert);
 										//writer.write(newComplexEvent.getC1().getChr()+"\t"+newComplexEvent.getC1().getPos()+"\t"+newComplexEvent.getId()+"\t"+newComplexEvent.getRef()+"\t"+newComplexEvent.getAlt()+"\t"+newComplexEvent.getQual()+"\t"+newComplexEvent.getFilter()+"\t"+newComplexEvent.getInfo()+"\n");
@@ -1231,7 +1237,7 @@ public class Clove {
 								//System.out.print("read depth for event: "+readDepth+"\t");
 							}
 							e.setAlt("<DEL>");
-							e.setInfo(e.getInfo()+"; ADP="+readDepth );
+							e.setInfo(e.getInfo()+";ADP="+readDepth );
 							break;
 						case TAN:
 							//double readDepth = meanReadDepth(reader, e.getC1().getPos()+1, e.getC2().getPos()-1);
@@ -1246,7 +1252,7 @@ public class Clove {
 								//System.out.print("read depth for event: "+readDepth+"\t");
 							}
 							e.setAlt("<DUP>");
-							e.setInfo(e.getInfo()+"; ADP="+readDepth );
+							e.setInfo(e.getInfo()+";ADP="+readDepth );
 							break;
 						case COMPLEX_DUPLICATION:
 						case COMPLEX_INVERTED_DUPLICATION:
@@ -1315,6 +1321,7 @@ public class Clove {
 						writer.write(e.toVcf()+"\n");
 					} catch (NullPointerException npe) {
 						System.out.println("VCF fail");
+						System.err.println(npe);
 					}
 				}
 			}
@@ -1324,7 +1331,7 @@ public class Clove {
 		samReader.close();	
 		//End Time
 		long endTime = System.nanoTime();
-		System.out.println("Took "+(endTime - startTime) + " ns"); 
+		System.out.println("Took "+(endTime - startTime)/1000000000 + " seconds"); 
 	}
 
 	

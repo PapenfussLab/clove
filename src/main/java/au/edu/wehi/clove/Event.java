@@ -1,5 +1,6 @@
 package au.edu.wehi.clove;
 
+import java.util.HashSet;
 import java.util.StringTokenizer;
 
 
@@ -18,6 +19,8 @@ public class Event {
 	private String qual;
 	private String filter;
 	private String info;
+	private HashSet<Clove.SV_ALGORITHM> calledBy;
+	private int calledTimes;
 		
 	public Event(GenomicCoordinate c1, GenomicCoordinate c2, EVENT_TYPE type){
 		if(c1.compareTo(c2) < 0){
@@ -30,6 +33,8 @@ public class Event {
 		this.type = type;
 		myNodes = new GenomicNode[2];
 		this.info="";
+		this.calledBy = new HashSet<Clove.SV_ALGORITHM>();
+		this.calledTimes = 0;
 	}
 	
 	public Event(GenomicCoordinate c1, GenomicCoordinate c2, EVENT_TYPE type, String additionalInformation){
@@ -38,7 +43,7 @@ public class Event {
 	}
 
 	/*Create event with VCF Info*/
-	public Event(GenomicCoordinate c1, GenomicCoordinate c2, EVENT_TYPE type, String id, String ref, String alt, String qual, String filter, String info){
+	public Event(GenomicCoordinate c1, GenomicCoordinate c2, EVENT_TYPE type, String id, String ref, String alt, String qual, String filter, String info, HashSet<Clove.SV_ALGORITHM> calledBy, int calledTimes){
 		if(c1.compareTo(c2) < 0){
 			this.c1 = c1;
 			this.c2 = c2;
@@ -55,6 +60,8 @@ public class Event {
 		this.qual=qual;
 		this.filter=filter;
 		this.info=info;
+		this.calledBy = calledBy;
+		this.calledTimes = calledTimes;
 	}
 	
 	/*
@@ -129,7 +136,7 @@ public class Event {
 		String alt=altVCF(type);
 		String info="SVTYPE="+alt.substring(1, 4)+"; CHR2="+chr2+"; END="+p2;
 				
-		return new Event(c1, c2, type, id, ref, alt, qual, filter, info);
+		return new Event(c1, c2, type, id, ref, alt, qual, filter, info, new HashSet<Clove.SV_ALGORITHM>() {{add(Clove.SV_ALGORITHM.SOCRATES);}}, 1);
 	}
 	/*
 	 * Function to classify a line of Socrates output into a genomic event type.
@@ -237,7 +244,7 @@ public class Event {
 		
 		//System.out.println(chr1 +"\t"+ p1 +"\t"+ p2 +"\t" + type +"\t"+ typeT);
 		
-		return new Event(c1, c2, type, id, ref, alt, qual, filter, info);
+		return new Event(c1, c2, type, id, ref, alt, qual, filter, info, new HashSet<Clove.SV_ALGORITHM>() {{add(Clove.SV_ALGORITHM.DELLY);}}, 1);
 		//return new Event(c1, c2, type);
 		
 	}
@@ -267,7 +274,7 @@ public class Event {
 		GenomicCoordinate c1 = new GenomicCoordinate(chr1, p1);
 		GenomicCoordinate c2 = new GenomicCoordinate(chr2, p2);
 		EVENT_TYPE type = classifySocratesBreakpoint(c1, o1, c2, o2);
-		return new Event(c1, c2, type, id, ref, alt, qual, filter, info);
+		return new Event(c1, c2, type, id, ref, alt, qual, filter, info, new HashSet<Clove.SV_ALGORITHM>() {{add(Clove.SV_ALGORITHM.BEDPE);}}, 1);
 	}
 	
 	
@@ -323,7 +330,7 @@ public class Event {
 		String alt=altVCF(type);
 		String info="SVTYPE="+alt.substring(1, 4)+"; CHR2="+chr2+"; END="+p2;
 		
-		return new Event(c1, c2, type, id, ref, alt, qual, filter, info);
+		return new Event(c1, c2, type, id, ref, alt, qual, filter, info, new HashSet<Clove.SV_ALGORITHM>() {{add(Clove.SV_ALGORITHM.CREST);}}, 1);
 	}
 	
 	private static EVENT_TYPE classifyCrestBreakpoint(String t, String c1, String c2, String o1, String o2){
@@ -584,8 +591,24 @@ public class Event {
 		} 
 	}
 	
+	public HashSet<Clove.SV_ALGORITHM> getCalledBy() {
+		return calledBy;
+	}
+	public void addCaller(HashSet<Clove.SV_ALGORITHM> caller){
+		this.calledBy.addAll(caller);
+	}
+
+	public int getCalledTimes() {
+		return calledTimes;
+	}
+	public void increaseCalls(int inc){
+		this.calledTimes += inc;
+	}
+
 	public String toVcf() {
-		return this.getCoord().getChr()+"\t"+this.getCoord().getPos()+"\t"+this.getId()+"\t"+this.getRef()+"\t"+this.getAlt()+"\t"+this.getQual()+"\t"+this.getFilter()+"\t"+this.getInfo();
+		return this.getCoord().getChr()+"\t"+this.getCoord().getPos()+"\t"+this.getId()+"\t"
+				+this.getRef()+"\t"+this.getAlt()+"\t"+this.getQual()+"\t"+this.getFilter()
+				+"\t"+this.getInfo()+";SUPPORT="+this.calledBy.size()+","+this.calledTimes;
 	}
 	
 	public void setFailFilter(){
