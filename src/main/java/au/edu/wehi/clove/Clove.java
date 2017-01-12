@@ -578,7 +578,7 @@ public class Clove {
 			} else if(args[argindex].equals("-c")){
 				try{
 					mean = Double.parseDouble(args[argindex + 1]);
-					interval = 2*Double.parseDouble(args[argindex + 2]);
+					interval = Double.parseDouble(args[argindex + 2]);
 					argindex += 3;
 				} catch (IllegalArgumentException e){
 					System.err.println("Unable to parse coverage and std.");
