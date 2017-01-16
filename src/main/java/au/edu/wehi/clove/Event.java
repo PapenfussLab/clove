@@ -269,7 +269,7 @@ public class Event {
 		String id=bits[6];
 		String ref="";
 		String alt="";
-		String info=bits[10];
+		String info= (bits.length>10? bits[10]: "");
 		String filter = "PASS";
 		GenomicCoordinate c1 = new GenomicCoordinate(chr1, p1);
 		GenomicCoordinate c2 = new GenomicCoordinate(chr2, p2);
@@ -559,7 +559,7 @@ public class Event {
 		} else if(type.equals(EVENT_TYPE.INS)){
 			return "<INS>";
 		} else if(type.equals(EVENT_TYPE.TAN)){
-			return "<DUP>";
+			return "<TAN>";
 		} else if(type.equals(EVENT_TYPE.INV1)){
 			return "<INV>";
 		} else if(type.equals(EVENT_TYPE.INV2)){
