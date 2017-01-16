@@ -134,7 +134,7 @@ public class Event {
 		}
 		
 		String alt=altVCF(type);
-		String info="SVTYPE="+alt.substring(1, 4)+"; CHR2="+chr2+"; END="+p2;
+		String info="SVTYPE="+alt.substring(1, 4)+";CHR2="+chr2+";END="+p2;
 				
 		return new Event(c1, c2, type, id, ref, alt, qual, filter, info, new HashSet<Clove.SV_ALGORITHM>() {{add(Clove.SV_ALGORITHM.SOCRATES);}}, 1);
 	}
@@ -269,11 +269,12 @@ public class Event {
 		String id=bits[6];
 		String ref="";
 		String alt="";
-		String info= (bits.length>10? bits[10]: "");
+		String info= (bits.length>10? bits[10]+";": "");
 		String filter = "PASS";
 		GenomicCoordinate c1 = new GenomicCoordinate(chr1, p1);
 		GenomicCoordinate c2 = new GenomicCoordinate(chr2, p2);
 		EVENT_TYPE type = classifySocratesBreakpoint(c1, o1, c2, o2);
+		info+="SVTYPE="+type+";CHR2="+chr2+";END="+p2;
 		return new Event(c1, c2, type, id, ref, alt, qual, filter, info, new HashSet<Clove.SV_ALGORITHM>() {{add(Clove.SV_ALGORITHM.BEDPE);}}, 1);
 	}
 	
@@ -328,7 +329,7 @@ public class Event {
 		}
 		
 		String alt=altVCF(type);
-		String info="SVTYPE="+alt.substring(1, 4)+"; CHR2="+chr2+"; END="+p2;
+		String info="SVTYPE="+alt.substring(1, 4)+";CHR2="+chr2+";END="+p2;
 		
 		return new Event(c1, c2, type, id, ref, alt, qual, filter, info, new HashSet<Clove.SV_ALGORITHM>() {{add(Clove.SV_ALGORITHM.CREST);}}, 1);
 	}

@@ -1251,7 +1251,7 @@ public class Clove {
 							} else {
 								//System.out.print("read depth for event: "+readDepth+"\t");
 							}
-							e.setAlt("<DUP>");
+							e.setAlt("<TAN>");
 							e.setInfo(e.getInfo()+";ADP="+readDepth );
 							break;
 						case COMPLEX_DUPLICATION:
