@@ -17,6 +17,7 @@ The ...-jar-with-depdendcies.jar should run without any additional requirements
 
 ## RUNNING CLOVE
 
+CLOVE runs on java 1.8 or higher. 
 Invoke CLOVE with java -jar <release.jar>
 This prompts you with the following parameters:
 
