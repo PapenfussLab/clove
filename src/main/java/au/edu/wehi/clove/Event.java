@@ -248,13 +248,135 @@ public class Event {
 		//return new Event(c1, c2, type);
 		
 	}
+	public static Event createNewEventFromDelly2Output(String output){
+		String[] bits = output.split("\t");
+		String chr1 = bits[0];
+		int p1 = Integer.parseInt(bits[1]);
+		String[] moreBits = bits[7].split(";");
+		String chr2 = moreBits[3].replace("CHR2=", "");
+		int p2 = Integer.parseInt(moreBits[4].replace("END=", ""));
+		String o = moreBits[7].replace("CT=", "");
+		String o1 = (Integer.parseInt(o.split("to")[0]) == 3? "+" : "-");
+		String o2 = (Integer.parseInt(o.split("to")[1]) == 3? "+" : "-");
+		
+		String id=bits[2];
+		String ref=bits[3];
+		String alt=bits[4];
+		String qual=bits[5];
+		String filter=bits[6];
+		String info=bits[7];
+		
+		GenomicCoordinate c1 = new GenomicCoordinate(chr1, p1);
+		GenomicCoordinate c2 = new GenomicCoordinate(chr2, p2);
+		EVENT_TYPE type = classifySocratesBreakpoint(c1, o1, c2, o2);
+		
+		//System.out.println(chr1 +"\t"+ p1 +"\t"+ p2 +"\t" + type +"\t"+ typeT);
+		
+		return new Event(c1, c2, type, id, ref, alt, qual, filter, info, new HashSet<Clove.SV_ALGORITHM>() {{add(Clove.SV_ALGORITHM.DELLY);}}, 1);
+		//return new Event(c1, c2, type);
+		
+	}
 	/*
-	 * Function to classify a line of Delly output into a genomic event type.
+	 * Function to classify a line of BedPE into a genomic event type.
 	 * The distinctions between INV1/2 etc are arbitrary, and have to be consistent across all the inputs.
 	 * c1 and c2 are always the same chromosome
 	 */
 	private static EVENT_TYPE classifyDellyBreakpointLatest(GenomicCoordinate c1, GenomicCoordinate c2){
 		return null;
+	}
+	
+	/*
+	 * Static function to handle the particularities of MetaSV output, and convert it into a general
+	 * purpose Event.
+	 */
+	public static Event createNewEventFromMetaSVOutput(String output){
+		String[] bits = output.split("\t");
+		String chr1 = bits[0];
+		int p1 = Integer.parseInt(bits[1]);
+		String[] moreBits = bits[7].split(";");
+		String chr2 = chr1;
+		int p2 = 0;
+		String o1 = null;
+		String o2 = null;
+		for(String s: moreBits){
+			if(s.startsWith("CHR2"))
+				chr2 = s.replace("CHR2=", "");
+			else if(s.startsWith("END="))
+				p2 = Integer.parseInt(s.replace("END=", ""));
+			else if(s.startsWith("SVLEN="))
+				p2 = p1 + Integer.parseInt(s.replace("SVLEN=", ""));
+			else if(s.startsWith("BD_ORI1")){
+				String o = s.replace("BD_ORI1=", "");
+				int fwd = Integer.parseInt(o.split("[+-]")[0]);
+				int rev = Integer.parseInt(o.split("[+-]")[1]);
+				o1 = (fwd>rev ? "+" : "-");}
+			
+			else if(s.startsWith("BD_ORI2")){
+				String o = s.replace("BD_ORI2=", "");
+				int fwd = Integer.parseInt(o.split("[+-]")[0]);
+				int rev = Integer.parseInt(o.split("[+-]")[1]);
+				o2 = (fwd>rev ? "+" : "-");
+			}		
+		}
+		String id=bits[2];
+		String ref=bits[3];
+		String alt=bits[4];
+		String qual=bits[5];
+		String filter=bits[6];
+		String info=bits[7];
+		
+		GenomicCoordinate c1 = new GenomicCoordinate(chr1, p1);
+		GenomicCoordinate c2 = new GenomicCoordinate(chr2, p2);
+		EVENT_TYPE type = classifyMetaSVBreakpoint(alt, chr1, chr2, o1, o2);
+		
+		if(type == EVENT_TYPE.COMPLEX_INVERSION){
+			Event e =  new ComplexEvent(c1, c2, type, new Event[] {}, null);
+			e.setAlt("<CIV>");
+			e.setCoord(c1);
+			return e;
+		}
+		
+		//System.out.println(chr1 +"\t"+ p1 +"\t"+ p2 +"\t" + type +"\t"+ typeT);
+		
+		return new Event(c1, c2, type, id, ref, alt, qual, filter, info, new HashSet<Clove.SV_ALGORITHM>() {{add(Clove.SV_ALGORITHM.METASV);}}, 1);
+		//return new Event(c1, c2, type);
+		
+	}
+	
+	private static EVENT_TYPE classifyMetaSVBreakpoint(String t, String c1, String c2, String o1, String o2){
+		if(t.equals("<DEL>")){
+			return EVENT_TYPE.DEL;
+		} else if (t.equals("<INS>")){
+			return EVENT_TYPE.INS;
+		} else if (t.equals("<INV>")){
+			return EVENT_TYPE.COMPLEX_INVERSION;
+		} else if(t.equals("<ITX>")){
+			if(o1.equals("+"))
+				if(o2.equals("+"))
+					return EVENT_TYPE.INV1;
+				else
+					return EVENT_TYPE.DEL;
+			else if(o2.equals("+"))
+				return EVENT_TYPE.TAN;
+			else
+				return EVENT_TYPE.INV2;
+		} else if (t.equals("<CTX>")) {
+			if(o1.equals(o2)) {
+				if(o1.equals("+"))
+					return EVENT_TYPE.INVTX1;
+				else
+					return EVENT_TYPE.INVTX2;
+			} else if(o1.equals("+") &&  c1.compareTo(c2) < 0 || o1.equals("-") && c1.compareTo(c2) >= 0){
+				return EVENT_TYPE.ITX1;
+			} else {
+				return EVENT_TYPE.ITX2;
+			}
+		} else if(t.equals("<DUP>")){
+			return EVENT_TYPE.TAN;
+		}
+		else {
+			return EVENT_TYPE.XXX;
+		}
 	}
 	
 	public static Event createNewEventFromBEDPE (String output){
@@ -297,7 +419,10 @@ public class Event {
 		EVENT_TYPE type = classifyCrestBreakpoint(t.nextToken(), chr1, chr2, o1, o2);
 		
 		if(type == EVENT_TYPE.COMPLEX_INVERSION){
-			return new ComplexEvent(c1, c2, type, null, null);
+			Event e =  new ComplexEvent(c1, c2, type, new Event[] {}, null);
+			e.setAlt("<CIV>");
+			e.setCoord(c1);
+			return e;
 		}
 		return new Event(c1, c2, type);
 	}
@@ -325,7 +450,10 @@ public class Event {
 		EVENT_TYPE type = classifyCrestBreakpoint(t.nextToken(), chr1, chr2, o1, o2);
 		
 		if(type == EVENT_TYPE.COMPLEX_INVERSION){
-			return new ComplexEvent(c1, c2, type, null, null);
+			Event e =  new ComplexEvent(c1, c2, type, new Event[] {}, null);
+			e.setAlt("<CIV>");
+			e.setCoord(c1);
+			return e;
 		}
 		
 		String alt=altVCF(type);
@@ -523,7 +651,7 @@ public class Event {
 	}
 
 	public String getFilter() {
-		return filter;
+		return (filter==null? ".":filter);
 	}
 
 	public void setFilter(String filter) {

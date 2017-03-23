@@ -368,7 +368,7 @@ public class Clove {
 						//redundant HTP?
 						System.out.println("Redundant HTP!");
 					} else {
-						statsByType.get(e.getType())[3]++;
+						statsByType.get(typeConversion.get(type))[3]++;
 					}	
 					
 				}
@@ -389,11 +389,11 @@ public class Clove {
 		e = events.next();
 		
 		int tps=0, fps=0, fns=0, htps=0;
-		System.out.println("Stats:\tTP\tHalf TP\tFP\tFN\tSen\tSpe");
+		System.out.println("Stats:\tTP\tHalf-TP\tFP\tFN\tSen\tSpe");
 		for(EVENT_TYPE t: EVENT_TYPE.values()){
 			int[] stats = statsByType.get(t);
-			double sen = (stats[0]+stats[2]==0? 0: (double)stats[0]/(stats[0]+stats[2]));
-			double spe = (stats[0]+stats[1]==0? 0: (double)stats[0]/(stats[0]+stats[1]));
+			double sen = (stats[0]+stats[2]+stats[3]==0? 0: (double)(stats[0]+stats[3])/(stats[0]+stats[2]+stats[3]));
+			double spe = (stats[0]+stats[1]+stats[3]==0? 0: (double)(stats[0]+stats[3])/(stats[0]+stats[1]+stats[3]));
 			System.out.println(t+"\t"+stats[0]+"\t"+stats[3]+"\t"+stats[1]+"\t"+stats[2]+"\t"+sen+"\t"+spe);
 			tps+=stats[0]; fps+=stats[1]; fns+=stats[2]; htps +=stats[3];
 		}
@@ -528,7 +528,7 @@ public class Clove {
         output.write("#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\n");
 	}
 	
-	enum SV_ALGORITHM {SOCRATES, DELLY, CREST, GUSTAF, BEDPE};
+	enum SV_ALGORITHM {SOCRATES, DELLY, DELLY2, CREST, GUSTAF, BEDPE, METASV};
 	
 	
 	static ArrayList<String> oldFns = new ArrayList<String>();
@@ -542,7 +542,7 @@ public class Clove {
 	
 		if(args.length < 8){
 			System.err.println("Options (all mandatory -- input can be specified more than once):" +
-					"\n\t-i <list of breakpoints> <algorithm (Socrates/Delly/Crest/Gustaf/BEDPE)>" +
+					"\n\t-i <list of breakpoints> <algorithm (Socrates/Delly/Delly2/Crest/Gustaf/BEDPE)>" +
 					"\n\t-b <BAM file> \n\t-c <mean coverage> <coverage>" +
 					"\n\t-o <output filename> [default: CLOVE.vcf]");
 			System.exit(0);
@@ -619,9 +619,11 @@ public class Clove {
 				switch(algorithm){
 				case SOCRATES: 	e = Event.createNewEventFromSocratesOutputLatest(line, count++); 	break;
 				case DELLY: 	e = Event.createNewEventFromDellyOutputLatest(line);break;
+				case DELLY2:	e = Event.createNewEventFromDelly2Output(line);break;
 				case CREST:		e = Event.createNewEventFromCrestOutputLatest(line, count++); 		break;
-				case GUSTAF: e = Event.createNewEventFromGustafOutput(line);	  if(e.size()<50) continue; break;
+				case GUSTAF: 	e = Event.createNewEventFromGustafOutput(line);	  if(e.size()<50) continue; break;
 				case BEDPE: 	e = Event.createNewEventFromBEDPE(line); break;
+				case METASV:	e = Event.createNewEventFromMetaSVOutput(line); break;
 				default:		e = null;
 				}
 				allEvents.add(e);
