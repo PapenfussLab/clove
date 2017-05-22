@@ -2,6 +2,8 @@ package au.edu.wehi.clove;
 
 import java.util.HashSet;
 import java.util.StringTokenizer;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 
 enum EVENT_TYPE {INS, INV1, INV2, DEL, TAN, INVTX1, INVTX2, ITX1, ITX2, XXX, COMPLEX_INVERSION, COMPLEX_INVERTED_DUPLICATION, COMPLEX_DUPLICATION, COMPLEX_TRANSLOCATION, COMPLEX_INVERTED_TRANSLOCATION, COMPLEX_INTERCHROMOSOMAL_TRANSLOCATION, COMPLEX_INTERCHROMOSOMAL_DUPLICATION, COMPLEX_INTERCHROMOSOMAL_INVERTED_TRANSLOCATION, COMPLEX_INTERCHROMOSOMAL_INVERTED_DUPLICATION};
@@ -272,7 +274,7 @@ public class Event {
 		
 		//System.out.println(chr1 +"\t"+ p1 +"\t"+ p2 +"\t" + type +"\t"+ typeT);
 		
-		return new Event(c1, c2, type, id, ref, alt, qual, filter, info, new HashSet<Clove.SV_ALGORITHM>() {{add(Clove.SV_ALGORITHM.DELLY);}}, 1);
+		return new Event(c1, c2, type, id, ref, alt, qual, filter, info, new HashSet<Clove.SV_ALGORITHM>() {{add(Clove.SV_ALGORITHM.DELLY2);}}, 1);
 		//return new Event(c1, c2, type);
 		
 	}
@@ -561,6 +563,204 @@ public class Event {
 			return EVENT_TYPE.XXX;
 		}
 	}
+	
+	
+    
+    /*************************************/
+    /* GRIDSS Output                    */
+    /*****************************************************************************************************************/
+
+    public static Event createNewEventFromGRIDSSOutput(String output) {
+
+        Pattern pattern;
+        Matcher matcher;
+
+        String[] bits = output.split("\t");
+
+        String chr1 = "chr" + bits[0], chr2 = "";
+        String orientation1 = "", orientation2 = "";
+        int p1 = Integer.parseInt(bits[1]), p2 = -1;
+        String alt = bits[4];
+        String[] result = Event.classifyAltGridssLumpy(alt);
+
+        chr2 = "chr" + result[0];
+        p2 = Integer.parseInt(result[1]);
+        orientation1 = result[2];
+        orientation2 = result[3];
+
+        GenomicCoordinate c1 = new GenomicCoordinate(chr1, p1);
+        GenomicCoordinate c2 = new GenomicCoordinate(chr2, p2);
+        EVENT_TYPE type = EVENT_TYPE.XXX;
+        if (!orientation1.equals("") && !orientation2.equals("")) {
+             type = Event.classifySocratesBreakpoint(c1, orientation1, c2, orientation2);
+        }
+
+        pattern = Pattern.compile("SVTYPE=(.+?)");
+        matcher = pattern.matcher(bits[7]);
+        matcher.find();
+
+        String id = bits[2];
+        String ref = bits[3];
+        String qual = bits[5];
+        String filter = bits[6];
+        String info = "-";
+        if (matcher.groupCount() != 0){
+            info = matcher.group(1);
+        }
+
+        return new Event(
+                c1, c2, type, id, ref, alt, qual, filter, info,
+                new HashSet<Clove.SV_ALGORITHM>() {{add(Clove.SV_ALGORITHM.GRIDSS);}}, 1
+        );
+    }
+
+    
+    private static String[] classifyAltGridssLumpy(String alt) {
+
+        /* 0: chr2
+         * 1: p2
+         * 2: orientation 1
+         * 3: orientation 2
+         * */
+        String[] result = new String[4];
+
+        if(alt.contains("]")) {
+
+            String[] item = alt.split("]");
+            if (item.length == 3){
+                // ALT: ]p]t --> len 3
+                result[0] = item[1].split(":")[0];
+                result[1] = item[1].split(":")[1];
+
+                result[2] = "-";
+                result[3] = "+";
+
+            } else {
+                // ALT: t]p] --> len 2
+                result[0] = item[1].split(":")[0];
+                result[1] = item[1].split(":")[1];
+
+                result[2] = "+";
+                result[3] = "+";
+            }
+
+        } else { // if(alt.contains("["))
+
+            String[] item = alt.split("\\[");
+            if (item.length == 3) {
+                // ALT: [p[t --> become 3
+                result[0] = item[1].split(":")[0];
+                result[1] = item[1].split(":")[1];
+
+                result[2] = "-";
+                result[3] = "-";
+
+            } else {
+                // ALT: t[p[ --> become 2
+                result[0] = item[1].split(":")[0];
+                result[1] = item[1].split(":")[1];
+
+                result[2] = "+";
+                result[3] = "-";
+            }
+        }
+
+        return result;
+    }
+
+    /*************************************/
+    /* LUMPY Output                      */
+    /*****************************************************************************************************************/
+    public static Event createNewEventFromLUMPYOutput(String output) {
+
+        Pattern pattern; Matcher matcher;
+        String orientation1 = "", orientation2 = "";
+        String[] bits = output.split("\t");
+        String chr1 = bits[0], chr2 = "";
+        int p1 = Integer.parseInt(bits[1]), p2 = -1;
+
+        String id = bits[2];
+        String ref = bits[3];
+        String alt = bits[4];
+        String qual = bits[5];
+        String filter = bits[6];
+        String info = bits[7];
+
+        /* get strands */
+        pattern = Pattern.compile("STRANDS=(.+?);");
+        matcher = pattern.matcher(bits[7]);
+        String strands = "";
+
+        if (matcher.find()){
+            strands = matcher.group(1);
+        }
+
+        if (alt.equals("<INV>")) {
+            int posStrand = 0, negStrand = 0;
+            
+            /* Get END */
+            pattern = Pattern.compile("END=(.+?);");
+            matcher = pattern.matcher(bits[7]);
+
+            chr2 = chr1;
+            if (matcher.find()){
+                p2 = Integer.parseInt(matcher.group(1));
+            }
+            
+            GenomicCoordinate c1 = new GenomicCoordinate(chr1, p1);
+            GenomicCoordinate c2 = new GenomicCoordinate(chr2, p2);
+    		Event e =  new ComplexEvent(c1, c2, EVENT_TYPE.COMPLEX_INVERSION, new Event[] {}, null);
+    		e.setAlt("<CIV>");
+    		e.setCoord(c1);
+    			return e;
+    		
+
+        } else if (alt.equals("<DEL>") || alt.equals("<DUP>")) {
+
+            String orientation = "";
+            /* get orientation */
+            pattern = Pattern.compile("STRANDS=(.+?):");
+            matcher = pattern.matcher(bits[7]);
+
+            if (matcher.find()){
+                orientation = matcher.group(1);
+            }
+
+            orientation1 = orientation.substring(0,1);
+            orientation2 = orientation.substring(1,1);
+
+            /* Get END */
+            pattern = Pattern.compile("END=(.+?);");
+            matcher = pattern.matcher(bits[7]);
+
+            chr2 = chr1;
+            if (matcher.find()){
+                p2 = Integer.parseInt(matcher.group(1));
+            }
+
+        } else {
+            String[] result = Event.classifyAltGridssLumpy(alt);
+            chr2 = result[0];
+            p2 = Integer.parseInt(result[1]);
+            orientation1 = result[2];
+            orientation2 = result[3];
+        }
+
+
+
+
+        GenomicCoordinate c1 = new GenomicCoordinate(chr1, p1);
+        GenomicCoordinate c2 = new GenomicCoordinate(chr2, p2);
+        EVENT_TYPE type = Event.classifySocratesBreakpoint(c1, orientation1, c2, orientation2);
+
+        /*return new Event(c1, c2, type);*/
+        return new Event(
+                c1, c2, type, id, ref, alt, qual, filter, info,
+                new HashSet<Clove.SV_ALGORITHM>() {{add(Clove.SV_ALGORITHM.LUMPY);}}, 1
+        );
+    }
+
+	
 	
 	public GenomicCoordinate getC1() {
 		return c1;

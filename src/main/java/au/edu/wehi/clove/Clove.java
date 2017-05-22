@@ -528,7 +528,7 @@ public class Clove {
         output.write("#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\n");
 	}
 	
-	enum SV_ALGORITHM {SOCRATES, DELLY, DELLY2, CREST, GUSTAF, BEDPE, METASV};
+	enum SV_ALGORITHM {SOCRATES, DELLY, DELLY2, CREST, GUSTAF, BEDPE, METASV, GRIDSS, LUMPY};
 	
 	
 	static ArrayList<String> oldFns = new ArrayList<String>();
@@ -624,6 +624,8 @@ public class Clove {
 				case GUSTAF: 	e = Event.createNewEventFromGustafOutput(line);	  if(e.size()<50) continue; break;
 				case BEDPE: 	e = Event.createNewEventFromBEDPE(line); break;
 				case METASV:	e = Event.createNewEventFromMetaSVOutput(line); break;
+				case GRIDSS:	e = Event.createNewEventFromGRIDSSOutput(line); break;
+				case LUMPY:		e = Event.createNewEventFromLUMPYOutput(line); break;
 				default:		e = null;
 				}
 				allEvents.add(e);
