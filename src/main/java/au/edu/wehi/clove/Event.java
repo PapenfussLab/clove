@@ -577,13 +577,13 @@ public class Event {
 
         String[] bits = output.split("\t");
 
-        String chr1 = "chr" + bits[0], chr2 = "";
+        String chr1 = bits[0], chr2 = "";
         String orientation1 = "", orientation2 = "";
         int p1 = Integer.parseInt(bits[1]), p2 = -1;
         String alt = bits[4];
         String[] result = Event.classifyAltGridssLumpy(alt);
 
-        chr2 = "chr" + result[0];
+        chr2 = result[0];
         p2 = Integer.parseInt(result[1]);
         orientation1 = result[2];
         orientation2 = result[3];
@@ -603,7 +603,7 @@ public class Event {
         String ref = bits[3];
         String qual = bits[5];
         String filter = bits[6];
-        String info = "-";
+        String info="SVTYPE="+type+";CHR2="+chr2+";END="+p2;
         if (matcher.groupCount() != 0){
             info = matcher.group(1);
         }
