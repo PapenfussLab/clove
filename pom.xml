@@ -4,7 +4,7 @@
   <groupId>au.edu.wehi</groupId>
   <artifactId>clove</artifactId>
   <packaging>jar</packaging>
-  <version>0.16</version>
+  <version>0.17</version>
   <name>clove</name>
   <url>http://github.com/PapenfussLab/clove</url>
   <properties>

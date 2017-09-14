@@ -542,9 +542,12 @@ public class Clove {
 	
 		if(args.length < 8){
 			System.err.println("Options (all mandatory -- input can be specified more than once):" +
-					"\n\t-i <list of breakpoints> <algorithm (Socrates/Delly/Delly2/Crest/Gustaf/BEDPE)>" +
+					"\n\t-i <list of breakpoints> <algorithm (Socrates/Delly/Delly2/Crest/Gustaf/BEDPE/GRIDSS)>" +
 					"\n\t-b <BAM file> \n\t-c <mean coverage> <coverage>" +
-					"\n\t-o <output filename> [default: CLOVE.vcf]");
+					"\n\t-o <output filename> [default: CLOVE.vcf]" +
+					"\n\t-r Do not perform read depth check. This option will lead all deletions and tandem "+
+						"\n\t   duplications to fail, but runs a lot faster. Use to get an idea about complex "+
+						"\n\t   variants only.");
 			System.exit(0);
 		}
 		
